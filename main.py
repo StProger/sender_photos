@@ -1,4 +1,4 @@
-import os, json
+import os, random
 
 from dotenv import load_dotenv
 
@@ -16,7 +16,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 scheduler = AsyncIOScheduler()
 load_dotenv()
 
-current_interval = 15
+current_interval = 5
 
 bot = Bot(os.getenv("TOKEN"))
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -72,36 +72,22 @@ async def send_img(dp: Dispatcher):
     :return:
     """
 
-    # Открываем json файл
-    with open("id_files.json") as file:
-        list_photo = list(json.load(file))
+    # Получаем список фото
+    list_photo = os.listdir("photo")
 
-    # Проверка на наличие id фото, если нет, то фотки закончились
-    if len(list_photo) == 0:
-        await dp.bot.send_message(chat_id=64917407, text="Больше изображений нет.")
-        return
+    # Берём рандомное фото
+    path = random.choice(list_photo)
+    with open(f"photo\\{path}", 'rb') as file:
+        img = file.read()
 
-    # Берём самый первый id
-    id_ = list_photo[0].get('id')
 
-    # Загружаем изображение с полученным id
-    await download_file(id_)
-
-    # Здесь по идее я удаляю первый словарь в  json
-    list_photo.pop(0)
-
-    # Перезаписываю json файл без использованного id
-    with open('id_files.json', 'w') as file:
-        json.dump(list_photo, file, ensure_ascii=False, indent=4)
-
-    with open('photo.jpg', 'rb') as picture:
-        img = picture.read()
     # Рассылка пользователям
     users = await get_users()
     for user in users:
 
         await dp.bot.send_photo(chat_id=int(user),
-                        photo=img)
+                                photo=img)
+    os.remove(f"photo\\{path}")
 
 
 
